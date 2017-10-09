@@ -43,7 +43,8 @@ def train(ccondition=100, lrate=0.5):
 	#選擇1/3的隨機測試data
 	testDatasIndex = np.arange(0, row)
 	testDatasIndex = set(testDatasIndex) - set(trainDatasIndex)
-	testDatas = inputx[list(testDatasIndex), :]
+	testDatasIndex = list(testDatasIndex)
+	testDatas = inputx[testDatasIndex, :]
 	print("testDatas: ", testDatas)
 	#正確“訓練辨識”數量
 	#正確“測試辨識”數量
@@ -61,10 +62,10 @@ def train(ccondition=100, lrate=0.5):
 			else:
 				y1 = 0
 			###adjust weight1
-			if y1 != outputy[i] and outputy[i] == 1:
+			if y1 != outputy[trainDatasIndex[i]] and outputy[trainDatasIndex[i]] == 1:
 				weight1 = weight1 + np.multiply(lrate, trainDatas[i])
 				# print(weight1, n)
-			elif y1 != outputy[i] and outputy[i] == 0:
+			elif y1 != outputy[trainDatasIndex[i]] and outputy[trainDatasIndex[i]] == 0:
 				weight1 = weight1 - np.multiply(lrate, trainDatas[i])
 				# print(weight1, n)
 			####################
@@ -76,26 +77,25 @@ def train(ccondition=100, lrate=0.5):
 			else:
 				y2 = 0
 			###adjust weight2
-			outy = outputy[i]
+			outy = outputy[trainDatasIndex[i]]
 			if outy > 1:
 				outy = 1
 			else:
 				outy = 0
-			if y2 != outy and (outputy[i] == 2 or outputy[i] == 3):
+			if y2 != outy and (outputy[trainDatasIndex[i]] == 2 or outputy[trainDatasIndex[i]] == 3):
 				weight2 = weight2 + np.multiply(lrate, trainDatas[i])
 				# print(weight2, n)
-			elif y2 != outy and (outputy[i] == 0 or outputy[i] == 1):
+			elif y2 != outy and (outputy[trainDatasIndex[i]] == 0 or outputy[trainDatasIndex[i]] == 1):
 				weight2 = weight2 - np.multiply(lrate, trainDatas[i])
 				# print(weight2, n)
 			####################
 			###計算訓練辨識率
-			if n == ccondition-1:
-				y = y1 + y2*2
-				# print(y, outputy[i], ' ', i)
-				if y == outputy[i]:
-					trainIdnumber = trainIdnumber + 1
+			y = y1 + y2*2
+			# print(y, outputy[trainDatasIndex[i]], ' ', i)
+			if y == outputy[trainDatasIndex[i]]:
+				trainIdnumber = trainIdnumber + 1
 	#訓練辨識率
-	print("trainIdnumber: ", trainIdnumber/trainDatas.shape[0])
+	print("trainIdnumber: ", (trainIdnumber/trainDatas.shape[0])/ccondition)
 
 	############ test rate ##############
 	for i in range(testDatas.shape[0]):
@@ -115,7 +115,7 @@ def train(ccondition=100, lrate=0.5):
 		else:
 			y2 = 0
 		###adjust weight2
-		outy = outputy[i]
+		outy = outputy[testDatasIndex[i]]
 		if outy > 1:
 			outy = 1
 		else:
@@ -123,12 +123,13 @@ def train(ccondition=100, lrate=0.5):
 		####################
 		###計算測試辨識率
 		y = y1 + y2*2
-		# print(y, outputy[i], ' ', i)
-		if y == outputy[i]:
+		print(y, outputy[testDatasIndex[i]], ' ', i)
+		if y == outputy[testDatasIndex[i]]:
 			testIdnumber = testIdnumber + 1
 	#訓練辨識率
 	print("testIdnumber: ", testIdnumber/testDatas.shape[0])
-
+	print("weight1: ", weight1)
+	print("weight2: ", weight2)
 
 def setInitialization(array):
 	row, col = array.shape
@@ -151,7 +152,7 @@ def network():
 
 def readFile():
 	try:
-		pfile1 = open("perceptron1.txt", "r")
+		pfile1 = open("perceptron2.txt", "r")
 		string = pfile1.read()
 		string = string.split('\n')
 		#string to double list
