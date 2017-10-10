@@ -34,7 +34,7 @@ def train(ccondition=100, lrate=0.5):
 	array = readFile()
 	# print(array)
 	
-	inputx, weight1, weight2, outputy, row = setInitialization(array)
+	inputx, outputy, row, col = setInitialization(array)
 
 	#選擇2/3的隨機訓練data
 	trainDatasIndex = np.random.choice(inputx.shape[0], size=int(row*2/3) + 1, replace=False)
@@ -50,90 +50,48 @@ def train(ccondition=100, lrate=0.5):
 	#正確“測試辨識”數量
 	trainIdnumber = 0
 	testIdnumber = 0
+	##神經元(perceptron)數量
+	y = np.zeros(int(np.amax(outputy))+1)
+	weight = np.zeros(shape=(y.shape[0], col))
+	for i in range(y.shape[0]):
+		weight[i] = np.random.rand(1, col)
 
 	############ start train ##############
 	for n in range(ccondition):
 		for i in range(trainDatas.shape[0]):
-			####################one perceptron
-			y1 = np.dot(weight1, trainDatas[i])
-			###sgn[y1]
-			if y1>0:
-				y1 = 1
-			else:
-				y1 = 0
-			###adjust weight1
-			if y1 != outputy[trainDatasIndex[i]] and outputy[trainDatasIndex[i]] == 1:
-				weight1 = weight1 + np.multiply(lrate, trainDatas[i])
-				# print(weight1, n)
-			elif y1 != outputy[trainDatasIndex[i]] and outputy[trainDatasIndex[i]] == 0:
-				weight1 = weight1 - np.multiply(lrate, trainDatas[i])
-				# print(weight1, n)
-			####################
-			####################two perceptron
-			y2 = np.dot(weight2, trainDatas[i])
-			###sgn[y2]
-			if y2>0:
-				y2 = 1
-			else:
-				y2 = 0
-			###adjust weight2
-			outy = outputy[trainDatasIndex[i]]
-			if outy > 1:
-				outy = 1
-			else:
-				outy = 0
-			if y2 != outy and (outputy[trainDatasIndex[i]] == 2 or outputy[trainDatasIndex[i]] == 3):
-				weight2 = weight2 + np.multiply(lrate, trainDatas[i])
-				# print(weight2, n)
-			elif y2 != outy and (outputy[trainDatasIndex[i]] == 0 or outputy[trainDatasIndex[i]] == 1):
-				weight2 = weight2 - np.multiply(lrate, trainDatas[i])
-				# print(weight2, n)
+
+			for j in range(y.shape[0]):
+				y[j] = calNetwork(weight[j], trainDatas[i])
+				###adjust weight[j]
+				weight[j] = adjustWeight(y[j], weight[j], outputy[trainDatasIndex[i]], lrate, 
+																		trainDatas[i], j)
 			####################
 			###計算訓練辨識率
-			y = y1 + y2*2
 			# print(y, outputy[trainDatasIndex[i]], ' ', i)
-			if y == outputy[trainDatasIndex[i]]:
+			if getyresult(y, outputy[trainDatasIndex[i]]):
 				trainIdnumber = trainIdnumber + 1
 	#訓練辨識率
-	print("trainIdnumber: ", (trainIdnumber/trainDatas.shape[0])/ccondition)
+	print("traincorrectrate: ", (trainIdnumber/trainDatas.shape[0])/ccondition)
 
 	############ test rate ##############
 	for i in range(testDatas.shape[0]):
-		####################one perceptron
-		y1 = np.dot(weight1, testDatas[i])
-		###sgn[y1]
-		if y1>0:
-			y1 = 1
-		else:
-			y1 = 0
-		####################
-		####################two perceptron
-		y2 = np.dot(weight2, testDatas[i])
-		###sgn[y2]
-		if y2>0:
-			y2 = 1
-		else:
-			y2 = 0
-		###adjust weight2
-		outy = outputy[testDatasIndex[i]]
-		if outy > 1:
-			outy = 1
-		else:
-			outy = 0
+
+		for j in range(y.shape[0]):
+			#################### perceptron
+			y[j] = calNetwork(weight[j], testDatas[i])
+
 		####################
 		###計算測試辨識率
-		y = y1 + y2*2
-		print(y, outputy[testDatasIndex[i]], ' ', i)
-		if y == outputy[testDatasIndex[i]]:
+		# print(y, outputy[testDatasIndex[i]], ' ', i)
+		if getyresult(y, outputy[trainDatasIndex[i]]):
 			testIdnumber = testIdnumber + 1
 	#訓練辨識率
-	print("testIdnumber: ", testIdnumber/testDatas.shape[0])
-	print("weight1: ", weight1)
-	print("weight2: ", weight2)
+	print("testcorrectrate: ", testIdnumber/testDatas.shape[0])
+	[print("weight[", i, "]: ", weight[i]) for i in range(y.shape[0])]
 
 def setInitialization(array):
 	row, col = array.shape
-	###set up input weight1 bais
+	###set up input weight[j] bais
 	#split inputx and outputy
 	array = np.hsplit(array, [col-1])
 	inputx = array[0]
@@ -141,18 +99,40 @@ def setInitialization(array):
 	#add threshold to inputx
 	threshold = np.zeros((row, 1)) -1
 	inputx = np.hstack((threshold, inputx))
-	#set weight1 bais
-	weight1 = np.random.rand(1, col)
-	weight2 = np.random.rand(1, col)
 
-	return inputx, weight1, weight2, outputy, row
+	return inputx, outputy, row, col
 
-def network():
-	x = 1
+#calculate network and adjust result to two value
+def calNetwork(weight, data):
+	y = np.dot(weight, data)
+	###sgn[y]
+	if y>0:
+		y = 1
+	else:
+		y = 0
+	return y
+
+#y=計算的結果, weight=當前權重, outputy=正確輸出, lrate=學習率, trainDatas=當前inputx, expectoutput=期望訓練的值 
+def adjustWeight(y, weight, outputy, lrate, trainDatas, expectoutput):
+	if y == 0 and outputy == expectoutput:
+		weight = weight + np.multiply(lrate, trainDatas)
+		# print(weight[j], n)
+	elif y == 1 and outputy != expectoutput:
+		weight = weight - np.multiply(lrate, trainDatas)
+		# print(weight[j], n)
+	return weight
+
+# after calNetwork, if the result is correct
+def getyresult(y, yRealValue):
+	if y[int(yRealValue)] == 1:
+		nonzero = np.nonzero(y)[0]
+		if nonzero.shape[0] == 1:
+			return True
+	return False
 
 def readFile():
 	try:
-		pfile1 = open("perceptron2.txt", "r")
+		pfile1 = open("8OX.txt", "r")
 		string = pfile1.read()
 		string = string.split('\n')
 		#string to double list
