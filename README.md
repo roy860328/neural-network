@@ -3,13 +3,15 @@ neural-network class homework about use simple perceptron to learn.
 
 
 # how to run 
-open cmd
+1.open cmd
 ```
 cd neural-network-homework
 ```
 ```
 python3 neural-network.py
 ```
+2.click neural-network executable file
+
 # Library Requirement
 
 numpy
