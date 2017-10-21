@@ -53,9 +53,9 @@ def setInterface():
 	##############os.path.dirname(sys.executable)當產出exe檔時才能正確找到txt檔案位置,但無法在.py檔中使用
 	##############os.getcwd()只有在.py檔有用,因為exe檔的默認位置在"cd ~" 讀檔時會找不到檔案
 	print("sys.executable directory: ", os.path.dirname(sys.executable))
-	os.chdir(os.path.dirname(sys.executable))
+	# os.chdir(os.path.dirname(sys.executable))
 	haveTxt = ''
-	for file in os.listdir(os.path.dirname(sys.executable)):
+	for file in os.listdir(os.getcwd()):
 		if file.endswith(".txt") or file.endswith(".TXT"):
 			haveTxt += str(file) + ','
 	haveTxt = haveTxt.split(",")
